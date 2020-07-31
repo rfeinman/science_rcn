@@ -141,7 +141,7 @@ def generate_suppression_masks(filter_scale=4., num_orients=16):
     return filter_masks
 
 
-def local_nonmax_suppression(filtered, suppression_masks, num_orients=16):
+def local_nonmax_suppression(filtered, suppression_masks):
     """
     Apply oriented non-max suppression to the filters, so that only a single 
     orientated edge is active at a pixel. See Preproc for additional parameters.
