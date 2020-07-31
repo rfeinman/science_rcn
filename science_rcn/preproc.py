@@ -24,11 +24,11 @@ class Preproc(object):
 
     Attributes
     ----------
-    filters : [numpy.ndarray]
+    filters : List[np.ndarray]
         Kernels for oriented Gabor filters.
-    pos_filters : [numpy.ndarray]
+    pos_filters : List[np.ndarray]
         Kernels for oriented Gabor filters with all-positive values.
-    suppression_masks : numpy.ndarray
+    suppression_masks : np.ndarray
         Masks for oriented non-max suppression.
     """
 
@@ -39,23 +39,23 @@ class Preproc(object):
         self.num_orients = num_orients
         self.filter_scale = filter_scale
         self.cross_channel_pooling = cross_channel_pooling
-        self.suppression_masks = generate_suppression_masks(filter_scale=filter_scale, 
-                                                            num_orients=num_orients)
+        self.suppression_masks = generate_suppression_masks(
+            filter_scale=filter_scale, num_orients=num_orients)
 
     def fwd_infer(self, img, brightness_diff_threshold=40.):
         """Compute bottom-up (forward) inference.
 
         Parameters
         ----------
-        img : numpy.ndarray
-            The input image.
+        img : np.ndarray
+            The 2D input image.
         brightness_diff_threshold : float
             Brightness difference threshold for oriented edges.
 
         Returns
         -------
-        bu_msg : 3D numpy.ndarray of float
-            The bottom-up messages from the preprocessing layer. 
+        bu_msg : np.ndarray
+            3D float array of bottom-up messages from the preprocessing layer.
             Shape is (num_feats, rows, cols)
         """
         filtered = np.zeros((len(self.filters),) + img.shape, dtype=np.float32)
@@ -131,7 +131,7 @@ def generate_suppression_masks(filter_scale=4., num_orients=16):
     # Compute for orientations [0, pi), then flip for [pi, 2*pi)
     for i, angle in enumerate(np.linspace(0., np.pi, num_orients // 2, endpoint=False)):
         x, y = np.cos(angle), np.sin(angle)
-        for r in xrange(1, int(np.sqrt(2) * size / 2)):
+        for r in range(1, int(np.sqrt(2) * size / 2)):
             dx, dy = round(r * x), round(r * y)
             if abs(dx) > cx or abs(dy) > cy:
                 continue

@@ -21,14 +21,20 @@ import numpy as np
 import os
 from multiprocessing import Pool
 from functools import partial
-from scipy.misc import imresize
-from scipy.ndimage import imread
+from PIL import Image
+from imageio import imread
 
 from science_rcn.inference import test_image
 from science_rcn.learning import train_image
 
 LOG = logging.getLogger(__name__)
 
+
+def imresize(img, new_size):
+    img = Image.fromarray(img)
+    img = img.resize(new_size, Image.BILINEAR)
+    img = np.array(img)
+    return img
 
 def run_experiment(data_dir='data/MNIST',
                    train_size=20,
@@ -78,23 +84,22 @@ def run_experiment(data_dir='data/MNIST',
         data_dir, train_size, test_size, full_test_set, seed=seed)
 
     LOG.info("Training on {} images...".format(len(train_data)))
-    train_partial = partial(train_image,
-                            perturb_factor=perturb_factor)
+    train_partial = partial(train_image, perturb_factor=perturb_factor)
     train_results = pool.map_async(train_partial, [d[0] for d in train_data]).get(9999999)
     all_model_factors = zip(*train_results)
 
     LOG.info("Testing on {} images...".format(len(test_data)))
-    test_partial = partial(test_image, model_factors=all_model_factors,
-                           pool_shape=pool_shape)
+    test_partial = partial(
+        test_image, model_factors=all_model_factors, pool_shape=pool_shape)
     test_results = pool.map_async(test_partial, [d[0] for d in test_data]).get(9999999)
 
     # Evaluate result
     correct = 0
     for test_idx, (winner_idx, _) in enumerate(test_results):
         correct += int(test_data[test_idx][1]) == winner_idx // (train_size // 10)
-    print "Total test accuracy = {}".format(float(correct) / len(test_results))
+    print("Total test accuracy = {}".format(float(correct) / len(test_results)))
 
-    return all_model_factors, test_results
+    return list(all_model_factors), test_results
 
 
 def get_mnist_data_iters(data_dir, train_size, test_size,
@@ -130,7 +135,7 @@ def get_mnist_data_iters(data_dir, train_size, test_size,
     if not os.path.isdir(data_dir):
         raise IOError("Can't find your data dir '{}'".format(data_dir))
 
-    def _load_data(image_dir, num_per_class, get_filenames=False):
+    def _load_data(image_dir, num_per_class):
         loaded_data = []
         for category in sorted(os.listdir(image_dir)):
             cat_path = os.path.join(image_dir, category)

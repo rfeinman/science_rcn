@@ -6,7 +6,6 @@ This code is an unoptimized version of what was used to produce the results in t
 Note that we use a faster implementation of 2D dilation, instead of the slower
 scipy.ndimage.morphology.grey_dilation.
 """
-from itertools import izip
 import logging
 import numpy as np
 import networkx as nx
@@ -56,7 +55,7 @@ def test_image(img, model_factors,
 
     # Forward pass inference
     fp_scores = np.zeros(len(model_factors[0]))
-    for i, (frcs, _, graph) in enumerate(izip(*model_factors)):
+    for i, (frcs, _, graph) in enumerate(zip(*model_factors)):
         fp_scores[i] = forward_pass(frcs,
                                     bu_msg,
                                     graph,

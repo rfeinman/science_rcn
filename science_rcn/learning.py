@@ -15,28 +15,29 @@ ModelFactors = namedtuple('ModelFactors', 'frcs edge_factors graph')
 
 
 def train_image(img, perturb_factor=2.):
-    """Main function for training on one image.
+    """
+    Main function for training on one image.
 
     Parameters
     ----------
-    img : 2D numpy.ndarray
-        The training image.
+    img : np.ndarray
+        The 2D training image.
     perturb_factor : float
         How much two points are allowed to vary on average given the distance
         between them. See Sec S2.3.2 for details.
 
     Returns
     -------
-    frcs : numpy.ndarray of numpy.int
-        Nx3 array of (feature idx, row, column), where each row represents a
-        single pool center
-    edge_factors : numpy.ndarray of numpy.int
-        Nx3 array of (source pool index, target pool index, perturb_radius), where
-        each row is a pairwise constraints on a pair of pool choices.
-    graph : networkx.Graph
-        An undirected graph whose edges describe the pairwise constraints between
-        the pool centers.
-        The tightness of the constraint is in the 'perturb_radius' edge attribute.
+    frcs : np.ndarray
+        Nx3 integer array of (feature idx, row, column), where each row
+        represents a single pool center
+    edge_factors : np.ndarray
+        Nx3 integer array of (source pool index, target pool index, perturb_radius),
+        where each row is a pairwise constraints on a pair of pool choices.
+    graph : nx.Graph
+        An undirected graph whose edges describe the pairwise constraints
+        between the pool centers. The tightness of the constraint is in the
+        'perturb_radius' edge attribute.
     """
     # Pre-processing layer (cf. Sec 4.2.1)
     preproc_layer = Preproc()
@@ -44,18 +45,20 @@ def train_image(img, perturb_factor=2.):
     # Sparsification (cf. Sec 5.1.1)
     frcs = sparsify(bu_msg)
     # Lateral learning (cf. 5.2)
-    graph, edge_factors = learn_laterals(frcs, bu_msg, perturb_factor=perturb_factor)
+    graph, edge_factors = learn_laterals(
+        frcs, bu_msg, perturb_factor=perturb_factor)
     return ModelFactors(frcs, edge_factors, graph)
 
 
 def sparsify(bu_msg, suppress_radius=3):
-    """Make a sparse representation of the edges by greedily selecting features from the
+    """
+    Make a sparse representation of the edges by greedily selecting features from the
     output of preprocessing layer and suppressing overlapping activations.
 
     Parameters
     ----------
-    bu_msg : 3D numpy.ndarray of float
-        The bottom-up messages from the preprocessing layer.
+    bu_msg : np.ndarray
+        3D float array of bottom-up messages from the preprocessing layer.
         Shape is (num_feats, rows, cols)
     suppress_radius : int
         How many pixels in each direction we assume this filter
@@ -63,10 +66,11 @@ def sparsify(bu_msg, suppress_radius=3):
 
     Returns
     -------
-    frcs : see train_image.
+    frcs : np.ndarray
+        see train_image.
     """
     frcs = []
-    img = bu_msg.max(0) > 0
+    img = bu_msg.max(0) > 0 # keep track of all x-y locations with at least 1 active feature
     while True:
         r, c = np.unravel_index(img.argmax(), img.shape)
         if not img[r, c]:
@@ -78,7 +82,8 @@ def sparsify(bu_msg, suppress_radius=3):
 
 
 def learn_laterals(frcs, bu_msg, perturb_factor, use_adjaceny_graph=False):
-    """Given the sparse representation of each training example,
+    """
+    Given the sparse representation of each training example,
     learn perturbation laterals. See train_image for parameters and returns.
     """
     if use_adjaceny_graph:
@@ -93,12 +98,14 @@ def learn_laterals(frcs, bu_msg, perturb_factor, use_adjaceny_graph=False):
 
     edge_factors = np.array(
         [(edge_source, edge_target, edge_attrs['perturb_radius'])
-         for edge_source, edge_target, edge_attrs in graph.edges_iter(data=True)])
+         for edge_source, edge_target, edge_attrs in graph.edges(data=True)])
     return graph, edge_factors
 
 
 def make_adjacency_graph(frcs, bu_msg, max_dist=3):
-    """Make a graph based on contour adjacency."""
+    """
+    Make a graph based on contour adjacency.
+    """
     preproc_pos = np.transpose(np.nonzero(bu_msg > 0))[:, 1:]
     preproc_tree = cKDTree(preproc_pos)
     # Assign each preproc to the closest F1
@@ -119,7 +126,8 @@ def add_underconstraint_edges(frcs,
                               perturb_factor=2.,
                               max_cxn_length=100,
                               tolerance=4):
-    """Examines all pairs of variables and greedily adds pairwise constraints
+    """
+    Examines all pairs of variables and greedily adds pairwise constraints
     until the pool flexibility matches the desired amount of flexibility specified by 
     perturb_factor and tolerance.
 
@@ -128,6 +136,8 @@ def add_underconstraint_edges(frcs,
     frcs : numpy.ndarray of numpy.int
         Nx3 array of (feature idx, row, column), where each row represents a 
         single pool center.
+    graph : nx.Graph
+        see train_image.
     perturb_factor : float
         How much two points are allowed to vary on average given the distance
         between them.
@@ -139,7 +149,8 @@ def add_underconstraint_edges(frcs,
 
     Returns
     -------
-    graph : see train_image.
+    graph : nx.Graph
+        see train_image.
     """
     graph = graph.copy()
     f1_bus_tree = cKDTree(frcs[:, 1:])
@@ -168,8 +179,26 @@ def add_underconstraint_edges(frcs,
 def adjust_edge_perturb_radii(frcs,
                               graph,
                               perturb_factor=2):
-    """Returns a new graph where the 'perturb_radius' has been adjusted to account for 
+    """
+    Returns a new graph where the 'perturb_radius' has been adjusted to account for
     rounding errors. See train_image for parameters and returns.
+
+    Parameters
+    ----------
+    frcs : numpy.ndarray of numpy.int
+        Nx3 array of (feature idx, row, column), where each row represents a
+        single pool center.
+    graph : nx.Graph
+        see train_image.
+    perturb_factor : float
+        How much two points are allowed to vary on average given the distance
+        between them.
+
+    Returns
+    -------
+    graph : nx.Graph
+        see train_image.
+
     """
     graph = graph.copy()
 
@@ -182,9 +211,9 @@ def adjust_edge_perturb_radii(frcs,
         round_up_error = total_rounding_error + upper - desired_radius
         round_down_error = total_rounding_error + lower - desired_radius
         if abs(round_up_error) < abs(round_down_error):
-            graph.edge[n1][n2]['perturb_radius'] = upper
+            graph.edges[n1,n2]['perturb_radius'] = upper
             total_rounding_error = round_up_error
         else:
-            graph.edge[n1][n2]['perturb_radius'] = lower
+            graph.edges[n1,n2]['perturb_radius'] = lower
             total_rounding_error = round_down_error
     return graph
