@@ -121,11 +121,8 @@ def make_adjacency_graph(frcs, bu_msg, max_dist=3):
     return graph
 
 
-def add_underconstraint_edges(frcs,
-                              graph,
-                              perturb_factor=2.,
-                              max_cxn_length=100,
-                              tolerance=4):
+def add_underconstraint_edges(frcs, graph, perturb_factor=2.,
+                              max_cxn_length=100, tolerance=4):
     """
     Examines all pairs of variables and greedily adds pairwise constraints
     until the pool flexibility matches the desired amount of flexibility specified by 
@@ -176,9 +173,7 @@ def add_underconstraint_edges(frcs,
     return graph
 
 
-def adjust_edge_perturb_radii(frcs,
-                              graph,
-                              perturb_factor=2):
+def adjust_edge_perturb_radii(frcs, graph, perturb_factor=2):
     """
     Returns a new graph where the 'perturb_radius' has been adjusted to account for
     rounding errors. See train_image for parameters and returns.
